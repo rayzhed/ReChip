@@ -9,8 +9,10 @@ section .rodata
     failed     db  "Error : can't find your bleblefile", 0xA, 0
     success     db  "File Opened pirate!",  0xA,    0
     mode db "rb", 0
+
     fmt_size   db  "%lu",  0xA,    0
-    fmt_byte   db  "%02x",  0x20,    0
+    fmt_opcode   db  "%04x",  0x20,    0
+    fmt_decode    db  "NNN=%03x NN=%02x N=%01x Y=%01x X=%01x", 0xA, 0
 section .bss
     ; name  type    size
     ram resb    4096 ; 000->1FF fontes | 200->FFF ROM+DATA
@@ -56,15 +58,39 @@ main:
     call printf wrt ..plt ; display file size
 
 
-    xor rbx,    rbx
-    .loop:   ; display first byte
-    lea rdx,    [rel ram + 0x200]
-    movzx esi,  BYTE    [rdx + rbx]
-    lea rdi,    [fmt_byte]
+    mov rbx,    0x200
+    .loop:   ; display words byte
+
+    lea rdx,    [rel ram]
+    movzx esi, WORD    [rdx + rbx]
+    rol si,    8
+
+    mov r10d, esi
+    and esi, 0x0FFF
+
+    mov edx, r10d
+    and edx, 0x00FF
+
+
+    mov ecx, r10d
+    and ecx, 0x000F
+
+    mov r8d, r10d
+    shr r8d, 4
+    and r8d, 0x000F
+
+    mov r9d, r10d
+    shr r9d, 8
+    and r9d, 0x000F
+
+
+    lea rdi,    [fmt_decode]
     xor eax,    eax
     call printf wrt ..plt
-    inc rbx
-    cmp rbx,    0x10 ; comp to 16
+
+
+    add rbx, 0x2
+    cmp rbx,    0x210 ; comp to 16
 
     jb .loop
     
