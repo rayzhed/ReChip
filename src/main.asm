@@ -1,5 +1,6 @@
 bits 64
 default rel
+%include "chip8.inc"
 
 section .data
 
@@ -15,7 +16,7 @@ section .rodata
     fmt_decode    db  "NNN=%03x NN=%02x N=%01x Y=%01x X=%01x", 0xA, 0
 section .bss
     ; name  type    size
-    ram resb    4096 ; 000->1FF fontes | 200->FFF ROM+DATA
+    ram resb    RAM_SIZE ; 000->1FF fontes | 200->FFF ROM+DATA
 
 section .text
     global main
@@ -45,9 +46,9 @@ main:
     xor eax,    eax
     call    printf  wrt ..plt
 
-    lea rdi,    [ram + 0x200]
+    lea rdi,    [ram + ROM_START]
     mov rsi,    1
-    mov rdx,    3584
+    mov rdx,    ROM_MAX_SIZE
     mov rcx,    file_ptr
     call    fread   wrt ..plt ; read file content
     mov read_rom,  rax
@@ -58,7 +59,7 @@ main:
     call printf wrt ..plt ; display file size
 
 
-    mov rbx,    0x200
+    mov rbx,    ROM_START
     .loop:   ; display words byte
 
     lea rdx,    [rel ram]
@@ -90,7 +91,7 @@ main:
 
 
     add rbx, 0x2
-    cmp rbx,    0x210 ; comp to 16
+    cmp rbx,    ROM_START + 8*2 ; comp up to 8 opcodes
 
     jb .loop
     

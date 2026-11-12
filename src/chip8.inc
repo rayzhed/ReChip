@@ -1,0 +1,3 @@
+RAM_SIZE    equ 4096        ; 000->1FF fontes | 200->FFF ROM+DATA
+ROM_START   equ 0x200
+ROM_MAX_SIZE     equ RAM_SIZE - ROM_START
