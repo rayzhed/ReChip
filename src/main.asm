@@ -25,35 +25,22 @@ section .text
     extern fopen
     extern fread
     extern fclose
-    %define file_ptr [rbp-24]
-    %define read_rom [rbp-32]
 
 main:
     push    rbp     ; prologue
     mov rbp,    rsp
     push rbx
-    sub rsp, 24
+    sub rsp,    8
 
-    lea rdi,    [file] ; open file to read
-    lea rsi,    [mode]
-    call    fopen  wrt ..plt
-    test    rax,    rax
-    jz  .error
 
-    mov file_ptr,   rax
+    lea rdi,    [file] ;path
+    lea rsi,    [ram + ROM_START] ;dest
+    mov rdx,    ROM_MAX_SIZE ;max size
+    call load_rom
+    test rax,   rax
+    jle .error
 
-    lea rdi,    [success] ; print file opened
-    xor eax,    eax
-    call    printf  wrt ..plt
-
-    lea rdi,    [ram + ROM_START]
-    mov rsi,    1
-    mov rdx,    ROM_MAX_SIZE
-    mov rcx,    file_ptr
-    call    fread   wrt ..plt ; read file content
-    mov read_rom,  rax
-
-    mov rsi,    read_rom
+    mov rsi,    rax
     lea rdi,    [fmt_size]
     xor eax,    eax
     call printf wrt ..plt ; display file size
@@ -100,9 +87,6 @@ main:
     .loop_end:
     mov edi,    0xA ;
     call putchar wrt ..plt
-
-    mov rdi, file_ptr
-    call    fclose  wrt ..plt
     xor eax,    eax
     jmp .done
 
@@ -120,5 +104,51 @@ main:
     pop rbx
     pop rbp
     ret
-    %undef file_ptr
-    %undef read_rom
+
+load_rom:
+    push    rbp     ; prologue
+    mov rbp,    rsp
+    push rbx    ;dest
+    push r12    ;max size
+    push r13    ;FILE*
+    push r14    ;read size
+
+    mov rbx,    rsi ;dest
+    mov r12,    rdx ; max size
+
+    lea rsi,    [mode]
+    call    fopen  wrt ..plt
+    test    rax,    rax
+    jz  .error_file
+
+    mov r13,    rax ; FILE*
+
+    mov rdi,    rbx
+    mov rsi,    1
+    mov rdx,    r12
+    mov rcx,    r13
+    call    fread   wrt ..plt ; read file content
+    mov r14,  rax   ; read size
+
+    mov rdi, r13
+    call    fclose  wrt ..plt
+    mov rax,    r14
+    test    rax,    rax
+    jz  .error_size
+
+    jmp .end
+        
+    .error_file:
+    mov rax,   -1
+    jmp .end
+
+    .error_size:
+    mov rax,   -2
+
+    .end:
+    pop r14
+    pop r13
+    pop r12
+    pop rbx
+    pop rbp
+    ret
